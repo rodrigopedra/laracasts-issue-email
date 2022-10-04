@@ -20,6 +20,7 @@ Route::post('/', function () {
     return redirect()->to('/');
 });
 
+// @see https://stackoverflow.com/a/40288501
 function readLastLines(string $filepath, int $count): bool|string
 {
     if (! is_file($filepath)) {
