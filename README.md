@@ -15,4 +15,4 @@ php artisan serve
 - Visit http://127.0.0.1:8000/
 - Click `send email`
 
-The project uses the `log` driver for the e-mail and shows the first log lines upon sending
+By default, the `log` mail driver is used, and the last written log lines are shown.
