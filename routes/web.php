@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     $logpath = storage_path('logs/laravel-' . date('Y-m-d') . '.log');
 
-    return view('home', ['log' => readLastLines($logpath, 17)]);
+    return view('home', ['log' => readLastLines($logpath, 18)]);
 });
 
 Route::post('/', function () {
@@ -20,52 +20,46 @@ Route::post('/', function () {
     return redirect()->to('/');
 });
 
-function readLastLines(string $filepath, int $lines): string
+function readLastLines(string $filepath, int $count): bool|string
 {
     if (! is_file($filepath)) {
-        return '';
+        return false;
     }
 
-    $cursor = -1;
+    $bufferSize = match (true) {
+        $count < 2 => 64,
+        $count < 10 => 512,
+        default => 4096,
+    };
 
     $file = fopen($filepath, 'r');
-    fseek($file, $cursor, SEEK_END);
-    $char = fgetc($file);
+    fseek($file, 0, SEEK_END);
 
-    while (in_array($char, ["\r", "\n"], true)) {
-        fseek($file, $cursor--, SEEK_END);
-        $char = fgetc($file);
+    $lineCount = 0;
+    $output = '';
+
+    while (ftell($file) > 0 && $lineCount < $count) {
+        $chunkSize = min(ftell($file), $bufferSize);
+
+        fseek($file, -$chunkSize, SEEK_CUR);
+
+        $chunk = fread($file, $chunkSize);
+        $output = $chunk . $output;
+
+        fseek($file, -$chunkSize, SEEK_CUR);
+
+        $lineCount += min(
+            substr_count($chunk, "\r\n"),
+            substr_count($chunk, "\r"),
+            substr_count($chunk, "\n"),
+        );
     }
 
-    $content = '';
-    $count = 0;
+    $lines = preg_split('/\r\n|\r|\n/', $output);
 
-    while ($char !== false) {
-        $content = $char . $content;
-
-        fseek($file, $cursor--, SEEK_END);
-        $char = fgetc($file);
-
-        $isNewLine = false;
-
-        while (in_array($char, ["\r", "\n"], true)) {
-            if ($isNewLine === false) {
-                $isNewLine = true;
-                $count++;
-            }
-
-            $content = PHP_EOL . $content;
-
-            fseek($file, $cursor--, SEEK_END);
-            $char = fgetc($file);
-        }
-
-        if ($count >= $lines) {
-            break;
-        }
+    while (count($lines) > $count) {
+        array_shift($lines);
     }
 
-    fclose($file);
-
-    return $content;
+    return implode(PHP_EOL, $lines);
 }
