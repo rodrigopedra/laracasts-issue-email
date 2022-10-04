@@ -6,8 +6,9 @@ https://laracasts.com/discuss/channels/laravel/laravel-9-a-copy-of-the-letter-to
 
 ~~~shell
 git clone https://github.com/rodrigopedra/laracasts-issue-email.git
-cd laracasts-email
+cd laracasts-issue-email
 cp .env.example .env
+composer install
 php artisan key:generate
 php artisan serve
 ~~~
